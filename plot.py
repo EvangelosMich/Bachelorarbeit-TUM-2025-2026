@@ -3,11 +3,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # --- load your data ---
-df = pd.read_csv("PCA.csv")  # change path as needed
+df = pd.read_csv("S4(A).csv")  # change path as needed
 
 # pick the PCs to plot
-xcol = "PCA|All|PC1 (41.6%)"
-ycol = "PCA|All|PC2 (18.2%)"
+xcol = "PCA|All|PC1 (51.2%)"
+ycol = "PCA|All|PC2 (19%)"
 
 x = df[xcol].to_numpy()
 y = df[ycol].to_numpy()
@@ -45,5 +45,5 @@ ax.grid(True, alpha=0.3)
 # Show a window (interactive) OR save to file for git/CI
 # plt.show()
 plt.tight_layout()
-plt.savefig("fig_pca_PC1_PC2.png", dpi=300)
+plt.savefig("fig_pca_PC1_PC2(HILIC POSITIVE).png", dpi=300)
 print("Saved plot to fig_pca_PC1_PC2.png")
