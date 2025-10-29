@@ -1,49 +1,64 @@
-import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
-# --- load your data ---
-df = pd.read_csv("S4(A).csv")  # change path as needed
+# Load and prepare data (assuming your initial loading is correct)
+df = pd.read_csv("Dataset/S3(B)Feature.csv")
+dfImportant = df[['General|All|rtmed','Stats|Mean|IGF','Stats|Mean|Rapamycin','Stats|Mean|Control']]
+dfImportant = dfImportant.sort_values(by=['General|All|rtmed'])
 
-# pick the PCs to plot
-xcol = "PCA|All|PC1 (51.2%)"
-ycol = "PCA|All|PC2 (19%)"
+# Use the full, unsliced arrays once
+full_time_array = np.array(dfImportant['General|All|rtmed'])
+full_intensity_array = np.array(dfImportant['Stats|Mean|IGF'])
 
-x = df[xcol].to_numpy()
-y = df[ycol].to_numpy()
+# Initialize the window range
+start_time = 31
+end_time = 51
 
-# if you want to derive labels/groups from the file instead of hardcoding:
-labels = df["General|All|label"].tolist()
-groups = df["General|All|group"].tolist()
+# The upper limit of your desired spectrum is 526, so the loop continues
+# as long as the start_time is below the overall max range.
+while end_time < 536: # Use 536 to include the batch ending at 526
+    
+    # 1. Create a FRESH mask based on the full array in EACH iteration
+    mask_batch = (full_time_array >= start_time) & (full_time_array <= end_time)
+    
+    # 2. Slice BOTH arrays using the same mask
+    time_batch = full_time_array[mask_batch]
+    intensity_batch = full_intensity_array[mask_batch]
+    
+    # Check if the batch is empty before plotting
+    if len(time_batch) > 0:
+        
+        # --- Peak Detection Logic (Modified to use current batch data) ---
+        x_maximus = []
+        y_maximus = []
+        
+        # We search for local maxima (peaks) within this small batch
+        # Ensure array is long enough for the search window (i-2 to i+2)
+        if len(intensity_batch) >= 5:
+            for i in range(2, len(intensity_batch) - 2):
+                current_i = intensity_batch[i]
+                if (current_i > intensity_batch[i-1] and 
+                    current_i > intensity_batch[i-2] and
+                    current_i > intensity_batch[i+1] and 
+                    current_i > intensity_batch[i+2]):
+                    
+                    y_maximus.append(current_i)
+                    x_maximus.append(time_batch[i])
 
-colors = {"IGF": "tab:green", "Rapamycin": "tab:red", "Control": "tab:blue", "QC": "tab:gray"}
+        # --- Plotting ---
+        plt.figure() # Create a new figure for each batch
+        plt.plot(time_batch, intensity_batch, label=f'Time: {start_time}-{end_time}')
+        plt.scatter(x_maximus, y_maximus, color='r', label='Local Maxima') # Changed to 'r' for visibility
+        
+        plt.xlabel('Retention Time (rtmed)')
+        plt.ylabel('IGF Intensity')
+        plt.title(f'Spectrum Batch: {start_time} to {end_time}')
+        plt.legend()
+        plt.show()
 
-fig, ax = plt.subplots(figsize=(7, 6))
+    # 3. Increment the batch window for the next iteration
+    start_time += 10
+    end_time += 10
 
-# plot each group with its own color
-for g in sorted(set(groups)):
-    idx = [i for i, gg in enumerate(groups) if gg == g]
-    ax.scatter(x[idx], y[idx], label=g, s=60, color=colors.get(g, "tab:cyan"))
-
-    # centroid circle (radius = mean distance to centroid)
-    cx = float(np.mean(x[idx]))
-    cy = float(np.mean(y[idx]))
-    r = float(np.mean(np.hypot(x[idx] - cx, y[idx] - cy)))
-    circ = plt.Circle((cx, cy), r, fill=False, lw=1.5, color=colors.get(g, "tab:cyan"))
-    ax.add_patch(circ)
-
-# point labels (optional; comment out if cluttered)
-for xi, yi, lab in zip(x, y, labels):
-    ax.annotate(lab, (xi, yi), fontsize=8, xytext=(4, 3), textcoords="offset points")
-
-ax.set_xlabel(xcol)
-ax.set_ylabel(ycol)
-ax.set_title("PCA: PC1 vs PC2")
-ax.legend(title="Group", frameon=False)
-ax.grid(True, alpha=0.3)
-
-# Show a window (interactive) OR save to file for git/CI
-# plt.show()
-plt.tight_layout()
-plt.savefig("fig_pca_PC1_PC2(HILIC POSITIVE).png", dpi=300)
-print("Saved plot to fig_pca_PC1_PC2.png")
+print("Plotting complete.")

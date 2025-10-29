@@ -1,0 +1,169 @@
+Metadata-Version: 2.1
+Name: nipals
+Version: 0.5.8
+Summary: A module for calculation of PCA with the NIPALS algorithm
+Home-page: https://github.com/fredrikw/python-nipals
+Author: Fredrik Wallner
+Author-email: fredrik@wallner.nu
+License: MIT license
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: Unix
+Classifier: Operating System :: POSIX
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Topic :: Utilities
+Classifier: Topic :: Scientific/Engineering
+Classifier: Topic :: Scientific/Engineering :: Bio-Informatics
+Classifier: Topic :: Scientific/Engineering :: Chemistry
+License-File: LICENSE
+License-File: AUTHORS.rst
+Requires-Dist: pandas >=0.22
+Requires-Dist: scipy >=1.0.0
+Requires-Dist: matplotlib >2.0.0
+
+========
+Overview
+========
+
+
+
+A module for calculation of PCA and PLS with the NIPALS algorithm. Based on the R packages
+`nipals <https://cran.r-project.org/package=nipals>`_ and
+`pcaMethods <https://doi.org/10.18129/B9.bioc.pcaMethods>`_ as well as the
+statistical appendixes to "Introduction to Multi- and Megavariate Data Analysis
+using Projection Methods (PCA & PLS)" by Eriksson et. al.
+Tested to give same results as the above packages and Simca, with some rounding errors.
+
+
+* Free software: MIT license
+
+Installation
+============
+
+::
+
+    pip install nipals
+
+Documentation
+=============
+
+See https://github.com/fredrikw/python-nipals/blob/master/docs/nipals_demo_iris.ipynb
+for an example and the tests at https://github.com/fredrikw/python-nipals/tree/master/tests.
+
+
+Development
+===========
+
+To run the all tests run::
+
+    tox
+
+Note, to combine the coverage data from all the tox environments run:
+
+.. list-table::
+    :widths: 10 90
+    :stub-columns: 1
+
+    - - Windows
+      - ::
+
+            set PYTEST_ADDOPTS=--cov-append
+            tox
+
+    - - Other
+      - ::
+
+            PYTEST_ADDOPTS=--cov-append tox
+
+Changelog
+=========
+
+0.5.8 (2024-06-20)
+------------------
+
+* Fix linewidth attributes on plots to allow saving the plots
+
+0.5.6 (2023-10-20)
+------------------
+
+* Updated supported Python versions
+
+
+0.5.5 (2022-09-28)
+------------------
+
+* Added check for X-matrix with row full of NAs
+
+0.5.4 (2021-05-07)
+------------------
+
+* Fixed Packaging error (0.5.3 was never released)
+
+0.5.3 (2021-05-06)
+------------------
+
+* Fixed error on numpy version >= 1.19
+* Updated supported versions
+* Moved CI to Github Action (pt 1)
+
+0.5.2 (2019-06-04)
+------------------
+
+* Added compatibility with Nipals objects saved from pre-0.5 versions
+
+0.5.1 (2019-05-23)
+------------------
+
+* Added checks for, and optional removal of, zero variance in variables
+* Added support for Python 3.7
+* (0.5.0 was never released due to failing CI tests)
+
+0.4.3 (2018-04-24)
+------------------
+
+* Fixed test that failed after last bug fix
+
+0.4.2 (2018-04-24)
+------------------
+
+* Fixed bug with selection of starting column for cross validation of PCA
+
+0.4.1 (2018-04-09)
+------------------
+
+* Fixed bug with cross validation of PCA
+
+0.4.0 (2018-04-09)
+------------------
+
+* Added cross validations
+* Added calculation of distance to model with plots
+* Added model overview plots
+
+0.3.0 (2018-04-05)
+------------------
+
+* Added R2X and R2Y to the PLS class
+* Made plot color selectable also for scoreplots without classes
+
+0.2.0 (2018-03-29)
+------------------
+
+* Added a PLS class
+* Improved plotting
+* Fixed some problems with missing/infinite values
+
+0.1.0 (2018-03-14)
+------------------
+
+* First release on PyPI.
