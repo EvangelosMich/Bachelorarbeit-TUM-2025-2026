@@ -16,7 +16,7 @@ print(col_na.std(),row_na.std())
 plt.imshow(mask,aspect="auto",cmap="gray")
 plt.xlabel("Variables")
 plt.ylabel("Samples")
-#lt.show()
+#plt.show()
 
 mask = df.isna().astype(int)
 clusters = KMeans(n_clusters=3, random_state=0).fit_predict(mask)

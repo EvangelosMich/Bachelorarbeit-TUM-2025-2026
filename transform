@@ -1,0 +1,24 @@
+# 1. Define the directory containing your mzXML files
+DATA_DIR="/home/evangelosge84puv/MSV000090865/raw/210208_M078_03_HILIC_neg"
+
+# 2. Loop through all .mzXML files in that directory
+for input_file in "$DATA_DIR"/*.mzXML; do
+    # Check if the file exists (prevents running if no files match)
+    if [ -f "$input_file" ]; then
+        # Extract just the filename (e.g., "my_file.mzXML")
+        filename=$(basename "$input_file")
+        
+        echo "Processing: $filename"
+        
+        # 3. Run the Docker conversion command for the specific file
+        # The -v $DATA_DIR:/data maps the entire folder for all files
+        sudo docker run -it --rm \
+            -v "$DATA_DIR":/data \
+            proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses \
+            wine msconvert "/data/$filename" -o /data
+        
+        echo "Finished converting $filename to .mzML"
+    fi
+done
+
+echo "All files converted."
