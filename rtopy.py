@@ -11,7 +11,7 @@ PPM_TOL = 15.0
 NOISE_THRESHOLD = 50.0
 
 
-DATADIR = "/home/evangelosge84puv/MSV000090865/raw/210208_M078_03_HILIC_neg"
+DATADIR = "/home/evangelosge84puv/MSV000090865/raw/HILICNEGMZML"
 all_mzml_files = glob.glob(f"{DATADIR}/*.mzML")
 all_mass_traces = {}
 all_peaks = {}
@@ -20,12 +20,14 @@ all_featChroms = {}
 if not all_mzml_files:
     print("Error no files were found")
 else:
-    
+    #Initialize mass-trace detection (detect chromatographic traces across scans)
     mtd = MassTraceDetection()
     mtd_params = mtd.getDefaults()
-    mtd_params.setValue("mass_error_ppm",PPM_TOL)
-    mtd_params.setValue("noise_threshold_int",NOISE_THRESHOLD)
+    mtd_params.setValue("mass_error_ppm",PPM_TOL)# Set m/z tolerance
+    mtd_params.setValue("noise_threshold_int",NOISE_THRESHOLD) # Ignore low-intensity noise
     mtd.setParameters(mtd_params)
+
+    # Initialize elution-peak detection (find chromatographic peaks within traces)
 
     epd = ElutionPeakDetection()
     epd_params = epd.getDefaults()
@@ -33,7 +35,7 @@ else:
     epd.setParameters(epd_params)
 
 
-   
+    # Initialize feature finder (assemble features from detected peaks and traces)
     ffm = FeatureFindingMetabo()
     ffm_params = ffm.getDefaults()
     ffm_params.setValue("isotope_filtering_model", "none")
@@ -66,7 +68,6 @@ else:
         print(f"Found {len(masstraces)} mass traces")        
         print(f"Found{len(masstracessplit)} peaks")
         print(f"Found{fm_file.size()} fms")
-        firstFeature = fm_file[0]
     
         print(f"Just checking something {fm_file[0].getMZ()}")
     

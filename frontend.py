@@ -31,8 +31,8 @@ if len(options) == 1:
 
 elif len(options) == 2:
     fig,ax = plt.subplots(figsize = (10,6))
-    substance1 = options[0].split('|')[-1]
-    substance2 = options[1].split('|')[-1]
+    substance1 = options[0].split('|')[-1] #IGF
+    substance2 = options[1].split('|')[-1]#Rapamycin
     compare = f"ttest|{substance1}_vs_{substance2}|mean.diff"
     bp.plotSpectrum1(options[0],values,comparison_cols=[compare],ax=ax,color= "blue")
     

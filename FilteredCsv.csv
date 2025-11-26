@@ -1,0 +1,3 @@
+,General|All|rtmed,General|All|annot_ms1,General|All|mzmed,Stats|Mean|IGF,Stats|Mean|Rapamycin,Stats|Mean|Control,ttest|IGF_vs_Rapamycin|mean.diff,ttest|Control_vs_Rapamycin|mean.diff,ttest|IGF_vs_Control|mean.diff
+587,41.3444142232628,"(3beta,5alpha,9alpha,14alpha,22E,24R)-3,5,9,14-Tetrahydroxye",481.29657735686,5.63748565784709,4.44094471792264,5.3044866031665,1.19654093992444,0.863541885243858,0.332999054680585
+588,41.3806523354223,STD_Taurolithocholic acid;Lithocholyltaurine;taurolithocholi,482.297698184702,5.132335320334,4.19956340704002,4.78226980694677,0.932771913293977,0.582706399906753,0.350065513387224
