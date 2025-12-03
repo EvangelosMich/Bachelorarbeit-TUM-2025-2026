@@ -153,7 +153,7 @@ def PCAOALS():
 
 
 def main():
-    T, P, target = PCAOALS()
+    T, P, target = PCAISVD()
     
     # Create DataFrame similar to your normalPCA output
     reduced_df = pd.DataFrame(P, columns=["PC1", "PC2"])
@@ -167,9 +167,9 @@ def main():
     for i, txt in enumerate(reduced_df["target"]):
         plt.annotate(txt, (reduced_df["PC1"][i], reduced_df["PC2"][i]), fontsize=8)
 
-    plt.xlabel("O-ALS PC1")
-    plt.ylabel("O-ALS PC2")
-    plt.title("PCA via Orthogonalized ALS (missing-value aware)")
+    plt.xlabel("ISVD PC1")
+    plt.ylabel("ISVD PC2")
+    plt.title("PCA via Iterative SVD (missing-value aware)")
     plt.show()
 
 if __name__ == "__main__":

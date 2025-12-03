@@ -43,6 +43,7 @@ else:
     ffm_params.setValue("mz_scoring_by_elements","false")
     ffm_params.setValue("report_convex_hulls","true")
     ffm.setParameters(ffm_params)
+    counter = 0
 
 
 
@@ -56,7 +57,6 @@ else:
         masstraces = []
         masstracessplit = []
         feat_chrom = []
-
         mtd.run(exp,masstraces,0)
         epd.detectPeaks(masstraces,masstracessplit)
         ffm.run(masstracessplit,fm_file,feat_chrom)
@@ -65,10 +65,36 @@ else:
         all_peaks[file] = masstracessplit
         all_featChroms[file] = fm_file
 
-        print(f"Found {len(masstraces)} mass traces")        
-        print(f"Found{len(masstracessplit)} peaks")
-        print(f"Found{fm_file.size()} fms")
+        # print(f"Found {len(masstraces)} mass traces")        
+        # print(f"Found{len(masstracessplit)} peaks")
+        # print(f"Found{fm_file.size()} fms")
     
-        print(f"Just checking something {fm_file[0].getMZ()}")
+        # print(f"Just checking something {fm_file[0].getMZ()}")
+        # fm_file.get_df().to_csv(f"out{counter}")
+        # counter+=1
+
+
+ # TODO extract features like mz,rt,intensity,quality DONE
+    fmfileFeatures = []
+    for file, fm in all_featChroms.items():   # iterate over dict: (key, value)
+        for feature in fm:                    # feature is a Feature object
+            fmfileFeatures.append([
+                feature.getMZ(),
+                feature.getRT(),
+                feature.getIntensity(),
+                feature.getOverallQuality(),
+                feature.getUniqueId(),
+                file   # optional: track which sample this came from
+            ])
+    print(fmfileFeatures)        
+ # TODO merge all featureMaps into one matrix DONEish
+
+ 
+ # TODO use plot methods to fill in NaN values
+  
+ 
+ # TODO perform PCAS
+ # TODO Perform T-tests
+ # TODO Testing correction with FDR     
     
 
