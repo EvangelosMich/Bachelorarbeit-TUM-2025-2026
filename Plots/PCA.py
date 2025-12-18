@@ -6,45 +6,49 @@ from fancyimpute import IterativeSVD
 import numpy as np
 
 def normalPCA():
-    df = pd.read_csv("Dataset/S3(C)Expression.csv")
-    df = df.set_index("ID").T
-    # total_nan = df.isnull().sum().sum()
-    # total_values = df.size
-    # overall_percentage = (total_nan / total_values) * 100
-    # print(f"Overall percentage of null values: {overall_percentage:.2f}%")
+    # Load data and transpose so rows=samples, cols=features
+    df = pd.read_csv("Dataset/S3(C)Expression.csv").set_index("ID").T
+
+    # Log10 transform (keep values from exploding, avoid log(0) with +1)
+    df = df.apply(lambda x: np.log10(x + 1) if np.issubdtype(x.dtype, np.number) else x)
+
+    # Sample labels for plotting
     target = df.index
-    df = df.loc[:, df.isnull().mean() < 0.5]        #filter out rows and columns that have a NaN 
-    df = df.loc[ df.isnull().mean(axis=1) < 0.5,:]  #ratio of bigger than .5 (can be changed)
 
-    df = df.fillna(df.median(axis=0))               #Fill rest with median values of columns
-    X_std = StandardScaler().fit_transform(df)      #Standarize is not used
+    # Fill missing values + remove zero-variance features
+    df = df.fillna(0)
+    df = df.loc[:, df.var(ddof=1) > 0]
 
-    pca = PCA(n_components=2)                   # PCA with 2 components
-    vecs = pca.fit_transform(X_std)                 
+    # Run PCA
+    X = df.to_numpy(dtype=float)
+    pca = PCA(n_components=6, svd_solver="full")
+    vecs = pca.fit_transform(X)
 
-
-    reduced_df = pd.DataFrame(vecs,columns=["PC1","PC2"])
-    reduced_df["PC1"] = -reduced_df["PC1"] #negate PC1 to get a more accurate model
-
+    # Put PCs into a dataframe
+    reduced_df = pd.DataFrame(vecs, columns=["PC1", "PC2", "PC3", "PC4", "PC5", "PC6"])
     reduced_df["target"] = target.values
 
+    # Flip PC1/PC2 direction to match paper orientation
+    reduced_df["PC1"] *= -1
+    reduced_df["PC2"] *= -1
 
-
-
-    plt.figure(figsize=(8,6))
+    # Plot PC1 vs PC2
+    plt.figure(figsize=(8, 6))
     plt.scatter(reduced_df["PC1"], reduced_df["PC2"], s=50)
 
-
-    for i, txt in enumerate(reduced_df["target"]): #Name the values in order to have the clusters
+    for i, txt in enumerate(reduced_df["target"]):
         plt.annotate(txt, (reduced_df["PC1"][i], reduced_df["PC2"][i]), fontsize=8)
 
-    plt.xlabel(f'PC1({pca.explained_variance_ratio_[0]})')
-    plt.ylabel(f'PC2({pca.explained_variance_ratio_[1]})')
+    plt.xlabel(f"PC1 ({pca.explained_variance_ratio_[0]*100:.2f}%)")
+    plt.ylabel(f"PC2 ({pca.explained_variance_ratio_[1]*100:.2f}%)")
     plt.show()
 
 
+
 def PCAISVD():
+
     df = pd.read_csv("Dataset/S3(C)Expression.csv")
+
     df = df.set_index("ID").T
     #df = df.fillna(df.mean(),axis=0) 
     target = df.index
@@ -77,7 +81,8 @@ def PCAISVD():
 
 def PCAOALS():
     # Load the dataset and prepare it
-    df = pd.read_csv("Dataset/S3(C)Expression.csv")
+    
+    df = pd.read_csv("S3(C)Expression.csv")
     df = df.set_index("ID").T           # transpose so rows = samples, columns = variables
     D = df.to_numpy()
     R, C = D.shape                      # R = number of samples, C = number of features
@@ -88,8 +93,8 @@ def PCAOALS():
     TMatrix = np.zeros((R, N))
 
     # Convergence settings
-    tol = 1e-6
-    max_iter = 200
+    tol = 1e-4
+    max_iter = 100
     prev_error = np.inf
 
     # Main O-ALS loop
@@ -153,7 +158,7 @@ def PCAOALS():
 
 
 def main():
-    T, P, target = PCAISVD()
+    T, P, target = normalPCA()
     
     # Create DataFrame similar to your normalPCA output
     reduced_df = pd.DataFrame(P, columns=["PC1", "PC2"])

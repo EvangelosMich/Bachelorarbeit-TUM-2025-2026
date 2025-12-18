@@ -1,9 +1,9 @@
 import streamlit as st
-import plot 
+import Plots.plot as plot 
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import barPlot as bp
+import Plots.barPlot as bp
 
 st.markdown("Peak graphing depending on value")
 values = st.slider("Time values",min_value=38,max_value=520) #manually inserting time values can be done with variables

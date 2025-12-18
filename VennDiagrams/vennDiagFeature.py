@@ -9,20 +9,17 @@ RTTOL = 5.0
 
 
 
-df1 = pd.read_csv("Dataset/FeatureInfoOldData.csv")
+df1 = pd.read_csv("Dataset/S3(B)Feature.csv")
 df2 = pd.read_csv("Dataset/processedFeatureInfo.csv")
 
-df2 = df2[(df2["General.All.annot_ms2"] != "NI")]
-df1 = df1[(df1["General.All.annot_ms1"].notna())]
-df1.to_csv("nonNan.csv")
-df2.to_csv("Checker.csv")
+
 
 matched_features = set()
 df2_indices_used = set()
 
 for i1,row1 in df1.iterrows():
-    mz1 = row1["General.All.mzmed"]
-    rt1 = row1["General.All.rtmed"]
+    mz1 = row1["General|All|mzmed"]
+    rt1 = row1["General|All|rtmed"]
 
 
     matches = df2[

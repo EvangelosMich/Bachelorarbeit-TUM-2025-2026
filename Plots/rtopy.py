@@ -26,6 +26,7 @@ else:
     mtd_params.setValue("mass_error_ppm",PPM_TOL)# Set m/z tolerance
     mtd_params.setValue("noise_threshold_int",NOISE_THRESHOLD) # Ignore low-intensity noise
     mtd.setParameters(mtd_params)
+    
 
     # Initialize elution-peak detection (find chromatographic peaks within traces)
 
@@ -64,14 +65,15 @@ else:
         all_mass_traces[file] = masstraces
         all_peaks[file] = masstracessplit
         all_featChroms[file] = fm_file
+        
 
         # print(f"Found {len(masstraces)} mass traces")        
         # print(f"Found{len(masstracessplit)} peaks")
         # print(f"Found{fm_file.size()} fms")
     
         # print(f"Just checking something {fm_file[0].getMZ()}")
-        # fm_file.get_df().to_csv(f"out{counter}")
-        # counter+=1
+        #fm_file.get_df().to_csv(f"out{counter}")
+        counter+=1
 
 
  # TODO extract features like mz,rt,intensity,quality DONE
@@ -86,7 +88,8 @@ else:
                 feature.getUniqueId(),
                 file   # optional: track which sample this came from
             ])
-    print(fmfileFeatures)        
+        
+    #print(fmfileFeatures)        
  # TODO merge all featureMaps into one matrix DONEish
 
  
