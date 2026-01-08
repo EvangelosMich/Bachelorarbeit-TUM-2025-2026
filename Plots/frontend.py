@@ -1,9 +1,6 @@
 import streamlit as st
-import Plots.plot as plot 
 import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
-import Plots.barPlot as bp
+import barPlot as bp
 
 st.markdown("Peak graphing depending on value")
 values = st.slider("Time values",min_value=38,max_value=520) #manually inserting time values can be done with variables
@@ -31,7 +28,7 @@ if len(options) == 1:
 
 elif len(options) == 2:
     fig,ax = plt.subplots(figsize = (10,6))
-    substance1 = options[0].split('|')[-1] #IGF
+    substance1 = options[0].split('|')[-1]#IGF
     substance2 = options[1].split('|')[-1]#Rapamycin
     compare = f"ttest|{substance1}_vs_{substance2}|mean.diff"
     bp.plotSpectrum1(options[0],values,comparison_cols=[compare],ax=ax,color= "blue")

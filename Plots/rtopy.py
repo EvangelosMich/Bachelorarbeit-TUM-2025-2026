@@ -3,12 +3,14 @@ import pandas as pd
 import numpy as np
 from pyopenms import *
 import pymzml as zml
+import csv
+import os
 from sklearn.decomposition import PCA
 from scipy.stats import ttest_ind,mannwhitneyu
 from urllib.request import urlretrieve
 import glob
-PPM_TOL = 15.0
-NOISE_THRESHOLD = 50.0
+PPM_TOL = 1.0
+NOISE_THRESHOLD = 5.0
 
 
 DATADIR = "/home/evangelosge84puv/MSV000090865/raw/HILICNEGMZML"
@@ -47,6 +49,15 @@ else:
     counter = 0
 
 
+    fga = FeatureGroupingAlgorithmQT()
+
+    fga_params = fga.getParameters()
+    fga_params.setValue("distance_MZ:max_difference", 10.0, "max m/z difference in PPM")
+    fga_params.setValue("distance_RT:max_difference", 20.0, "max RT difference in seconds")
+    fga.setParameters(fga_params)
+
+
+
 
     
     
@@ -72,8 +83,7 @@ else:
         # print(f"Found{fm_file.size()} fms")
     
         # print(f"Just checking something {fm_file[0].getMZ()}")
-        #fm_file.get_df().to_csv(f"out{counter}")
-        counter+=1
+      
 
 
  # TODO extract features like mz,rt,intensity,quality DONE
@@ -89,8 +99,73 @@ else:
                 file   # optional: track which sample this came from
             ])
         
+    my_columns = [
+    'm/z',              # from feature.getMZ()
+    'Retention Time',   # from feature.getRT()
+    'Intensity',        # from feature.getIntensity()
+    'Quality',          # from feature.getOverallQuality()
+    'ID',               # from feature.getUniqueId()
+    'Filename'          # from file (the key in your dict)
+]
+
+    mapList = list(all_featChroms.values())
+    consensusMap = ConsensusMap()
+
+    
+    for i, (file_path, fmap) in enumerate(all_featChroms.items()):
+        fmap.setIdentifier(str(i))
+
+    aligner = MapAlignmentAlgorithmPoseClustering()
+    aligner.align(mapList)
+
+
+
+
+
+    fga.group(mapList, consensusMap)
+    
+
+# 1. Create a list to store our rows
+consensus_data = []
+
+# 2. Get the filenames to use as column headers
+# We use the keys from your all_featChroms dict
+filenames = [os.path.basename(f) for f in all_featChroms.keys()]
+
+for feature in consensusMap:
+    # Start the row with basic metadata
+    row = {
+        'mz': feature.getMZ(),
+        'rt': feature.getRT(),
+        'quality': feature.getQuality()
+    }
+    
+    # Initialize all intensities to 0.0 (or np.nan) for this metabolite
+    for name in filenames:
+        row[name] = 0.0
+        
+    # Now fill in the intensities that actually exist for this consensus feature
+    # Each 'handle' points to the original file it came from
+    for handle in feature.getFeatureList():
+        file_index = handle.getMapIndex()
+        # Map the intensity to the correct filename column
+        row[filenames[file_index]] = handle.getIntensity()
+        
+    consensus_data.append(row)
+
+# 3. Create the clean DataFrame
+df = pd.DataFrame(consensus_data)
+df = df.sort_values("mz")
+# Save it to check the 1,200 row count
+df.to_csv("Consensus_Matrix_Final.csv", index=False)
+print(f"Matrix created! Rows: {len(df)}, Columns: {len(df.columns)}")
+    
+
+
+
+
+
     #print(fmfileFeatures)        
- # TODO merge all featureMaps into one matrix DONEish
 
  
  # TODO use plot methods to fill in NaN values
