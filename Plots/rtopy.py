@@ -9,8 +9,8 @@ from sklearn.decomposition import PCA
 from scipy.stats import ttest_ind,mannwhitneyu
 from urllib.request import urlretrieve
 import glob
-PPM_TOL = 1.0
-NOISE_THRESHOLD = 5.0
+PPM_TOL = 1.0 #Mass tolerance for example with 100.001 and 100.002 it would be treated as the same molecule
+NOISE_THRESHOLD = 5.0 #Any signal below this is treated as electronic static and ignored
 
 
 DATADIR = "/home/evangelosge84puv/MSV000090865/raw/HILICNEGMZML"
@@ -28,15 +28,16 @@ else:
     mtd_params.setValue("mass_error_ppm",PPM_TOL)# Set m/z tolerance
     mtd_params.setValue("noise_threshold_int",NOISE_THRESHOLD) # Ignore low-intensity noise
     mtd.setParameters(mtd_params)
+    #Why: Raw MS data is just a cloud of dots (m/z,rt,intensity). The first step is to connect dots of the same m/z across time
     
 
     # Initialize elution-peak detection (find chromatographic peaks within traces)
-
     epd = ElutionPeakDetection()
     epd_params = epd.getDefaults()
     epd_params.setValue("width_filtering","fixed")
     epd.setParameters(epd_params)
-
+    #Why:Once mtd has found a line of signals across time (traces),epd looks at that line to see if it foes up and down like a bell curve (what we call a peak) or
+    #If its just a flat background line
 
     # Initialize feature finder (assemble features from detected peaks and traces)
     ffm = FeatureFindingMetabo()
@@ -46,7 +47,8 @@ else:
     ffm_params.setValue("mz_scoring_by_elements","false")
     ffm_params.setValue("report_convex_hulls","true")
     ffm.setParameters(ffm_params)
-    counter = 0
+    #Why:This takes the peaks that were found by epd and bundles them: It calculated the centroid m/z the exact retention time, and the total intensity
+    #under the formerly area curve that was found
 
 
     fga = FeatureGroupingAlgorithmQT()
@@ -55,12 +57,14 @@ else:
     fga_params.setValue("distance_MZ:max_difference", 10.0, "max m/z difference in PPM")
     fga_params.setValue("distance_RT:max_difference", 20.0, "max RT difference in seconds")
     fga.setParameters(fga_params)
+    #Setting up the algorithm that will eventually match "Metabolite A" in IGF1.1 with "Metabolite A" in IGF1.2
 
 
 
 
     
-    
+    #Part 2: Processing loop
+    #Loading all the raw .mzML files into RAM
     for file in all_mzml_files: 
         #print(file)
         exp = MSExperiment()
@@ -69,20 +73,14 @@ else:
         masstraces = []
         masstracessplit = []
         feat_chrom = []
-        mtd.run(exp,masstraces,0)
-        epd.detectPeaks(masstraces,masstracessplit)
-        ffm.run(masstracessplit,fm_file,feat_chrom)
-
-        all_mass_traces[file] = masstraces
-        all_peaks[file] = masstracessplit
+        mtd.run(exp,masstraces,0) #Connecting the dots into traces
+        epd.detectPeaks(masstraces,masstracessplit) #Cut traces into specific peaks
+        ffm.run(masstracessplit,fm_file,feat_chrom) #Conert peaks into quantified Features
+        #Here essentially we create the list of metabolites for each specific file
         all_featChroms[file] = fm_file
         
 
-        # print(f"Found {len(masstraces)} mass traces")        
-        # print(f"Found{len(masstracessplit)} peaks")
-        # print(f"Found{fm_file.size()} fms")
-    
-        # print(f"Just checking something {fm_file[0].getMZ()}")
+
       
 
 
@@ -165,7 +163,7 @@ print(f"Matrix created! Rows: {len(df)}, Columns: {len(df.columns)}")
 
 
 
-    #print(fmfileFeatures)        
+      
 
  
  # TODO use plot methods to fill in NaN values

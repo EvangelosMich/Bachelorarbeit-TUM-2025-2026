@@ -109,12 +109,12 @@ def PCAOALS():
     n_rows, n_cols = dm.shape
     
     #PCA decomposes the data into Scores(P) and Loadings(T) with a random guess for scores and an empty matrix for loadings
-    P = np.random.rand(n_cols,2)
-    T = np.zeros((n_rows,2))
+    P = np.random.rand(n_cols,6)
+    T = np.zeros((n_rows,6))
     
 
     #Pold is used later for checking ame for tolerance and max iter
-    P_old = np.zeros_like(P.shape)
+    P_old = np.zeros_like(P)
     tolerance = 1e-6
     max_iter = 100
     
@@ -166,17 +166,17 @@ def PCAOALS():
 
 def main():
     P,T,target,explVars = PCAOALS()
-    reduced_df = pd.DataFrame(T,columns=["PC1","PC2"])
+    reduced_df = pd.DataFrame(T,columns=["PC1","PC2","PC3","PC4","PC5","PC6",])
     reduced_df["target"] = target
     #reduced_df["PC1"] *= -1
     #reduced_df["PC2"] *= -1
     
     plt.figure(figsize=(8,6))
-    plt.scatter(reduced_df["PC2"], reduced_df["PC1"], s=50)
+    plt.scatter(reduced_df["PC1"], reduced_df["PC2"], s=50)
 
 
     for i, txt in enumerate(reduced_df["target"]):
-        plt.annotate(txt, (reduced_df["PC2"][i], reduced_df["PC1"][i]), fontsize=8)
+        plt.annotate(txt, (reduced_df["PC1"][i], reduced_df["PC2"][i]), fontsize=8)
 
     plt.xlabel(f"PC1 ({explVars[0]*100:.1f}%)")
     plt.ylabel(f"PC1 ({explVars[1]*100:.1f}%)")
