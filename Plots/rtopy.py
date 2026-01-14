@@ -113,8 +113,7 @@ else:
     for i, (file_path, fmap) in enumerate(all_featChroms.items()):
         fmap.setIdentifier(str(i))
 
-    aligner = MapAlignmentAlgorithmPoseClustering()
-    aligner.align(mapList)
+
 
 
 

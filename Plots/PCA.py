@@ -8,7 +8,7 @@ import numpy as np
 
 def normalPCA():
     # Load data and transpose so rows=samples, cols=features
-    df = pd.read_csv("Dataset/S3(C)Expression.csv").set_index("ID").T
+    df = pd.read_csv("Dataset/ExpressionProcessed.csv").set_index("ID").T
 
     # Log10 transform (keep values from exploding, avoid log(0) with +1)
     df = df.apply(lambda x: np.log10(x + 1) if np.issubdtype(x.dtype, np.number) else x)
@@ -109,8 +109,8 @@ def PCAOALS():
     n_rows, n_cols = dm.shape
     
     #PCA decomposes the data into Scores(P) and Loadings(T) with a random guess for scores and an empty matrix for loadings
-    P = np.random.rand(n_cols,6)
-    T = np.zeros((n_rows,6))
+    P = np.random.rand(n_cols,2)
+    T = np.zeros((n_rows,2))
     
 
     #Pold is used later for checking ame for tolerance and max iter
@@ -165,22 +165,23 @@ def PCAOALS():
 
 
 def main():
-    P,T,target,explVars = PCAOALS()
-    reduced_df = pd.DataFrame(T,columns=["PC1","PC2","PC3","PC4","PC5","PC6",])
-    reduced_df["target"] = target
-    #reduced_df["PC1"] *= -1
-    #reduced_df["PC2"] *= -1
+    # P,T,target,explVars = PCAOALS()
+    # reduced_df = pd.DataFrame(T,columns=["PC1","PC2"])
+    # reduced_df["target"] = target
+    # #reduced_df["PC1"] *= -1
+    # #reduced_df["PC2"] *= -1
     
-    plt.figure(figsize=(8,6))
-    plt.scatter(reduced_df["PC1"], reduced_df["PC2"], s=50)
+    # plt.figure(figsize=(8,6))
+    # plt.scatter(reduced_df["PC1"], reduced_df["PC2"], s=50)
 
 
-    for i, txt in enumerate(reduced_df["target"]):
-        plt.annotate(txt, (reduced_df["PC1"][i], reduced_df["PC2"][i]), fontsize=8)
+    # for i, txt in enumerate(reduced_df["target"]):
+    #     plt.annotate(txt, (reduced_df["PC1"][i], reduced_df["PC2"][i]), fontsize=8)
 
-    plt.xlabel(f"PC1 ({explVars[0]*100:.1f}%)")
-    plt.ylabel(f"PC1 ({explVars[1]*100:.1f}%)")
-    plt.show() 
+    # plt.xlabel(f"PC1 ({explVars[0]*100:.1f}%)")
+    # plt.ylabel(f"PC1 ({explVars[1]*100:.1f}%)")
+    # plt.show() 
+    normalPCA()
 
 
 if __name__ == "__main__":
