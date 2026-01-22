@@ -6,14 +6,16 @@ import pymzml as zml
 import csv
 import os
 from sklearn.decomposition import PCA
-from scipy.stats import ttest_ind,mannwhitneyu
+from scipy.stats import ttest_ind
 from urllib.request import urlretrieve
 import glob
-PPM_TOL = 1.0 #Mass tolerance for example with 100.001 and 100.002 it would be treated as the same molecule
-NOISE_THRESHOLD = 5.0 #Any signal below this is treated as electronic static and ignored
-
-
+import PCA as pca
+PPM_TOL = 15.0 #Mass tolerance for example with 100.001 and 100.002 it would be treated as the same molecule
+NOISE_THRESHOLD =25.0 #Any signal below this is treated as electronic static and ignored
+MIN_SAMPLES = 2
 DATADIR = "/home/evangelosge84puv/MSV000090865/raw/HILICNEGMZML"
+MIN_FRAC = 0.5
+
 all_mzml_files = glob.glob(f"{DATADIR}/*.mzML")
 all_mass_traces = {}
 all_peaks = {}
@@ -120,6 +122,18 @@ else:
 
 
     fga.group(mapList, consensusMap)
+
+    aligner = MapAlignmentAlgorithmPoseClustering()
+    align_params = aligner.getDefaults()
+    aligner.setParameters(align_params)
+
+    transformations = []
+
+    for fmap in mapList:
+        trafo = TransformationDescription()
+        if not fmap.isMetaEmpty():
+            aligner.align(fmap, trafo)
+            MapAlignmentTransformer.transformRetentionTimes(fmap,trafo)    
     
 
 # 1. Create a list to store our rows
@@ -154,18 +168,87 @@ for feature in consensusMap:
 df = pd.DataFrame(consensus_data)
 df = df.sort_values("mz")
 # Save it to check the 1,200 row count
-df.to_csv("Consensus_Matrix_Final.csv", index=False)
-print(f"Matrix created! Rows: {len(df)}, Columns: {len(df.columns)}")
+#df.to_csv("Consensus_Matrix_Final.csv", index=False)
+#print(f"Matrix created! Rows: {len(df)}, Columns: {len(df.columns)}")
+
+intensity_cols = filenames
+metadata_cols = ['mz','rt','quality']
+df = df.dropna(thresh=MIN_SAMPLES, subset=intensity_cols)
+df = df[df["quality"] > 0.5]
+df_metadata = pd.read_csv("Dataset/metadata.csv")
+metadata_dic = dict(zip(df_metadata["Filename"],df_metadata["Group"]))
+
+
+presence = df[intensity_cols].notna()
+mask = presence.sum(axis=1) >= MIN_SAMPLES
+df_filtered = df[mask]
+
+mask = presence.mean(axis=1) >= MIN_FRAC
+df_filtered = df[mask]
+
+df_intensities = df_filtered[intensity_cols].replace(0.0,np.nan)
+df_intensities.rename(columns=metadata_dic,inplace=True)
+sorted_cols = sorted(df_intensities.columns, key = lambda x: metadata_dic.get(x,x))
+df_grouped = df_intensities[sorted_cols]
+df_log = np.log10(df_grouped)
+
+expression_df = pd.DataFrame(np.log10(df_grouped), columns=df_grouped.columns)
+global_median = expression_df.stack().median()
+
+for col in expression_df.columns:
+    medianVal = expression_df[col].median()
+    expression_df[col] = expression_df[col] - medianVal + global_median
+
+
+expression_df.insert(0,'ID',[f"FT{i+1:04d}" for i in range(len(df))])
+expression_df.to_csv("Expression_Matrix_Python.csv",index=False)
+
+
+igf_cols = expression_df.filter(like="IGF1").columns
+rapa_cols = expression_df.filter(like="Rapamycin").columns
+qc_cols = expression_df.filter(like="QC").columns
+vc_cols = expression_df.filter(like="VControl").columns
+
+expression_df[igf_cols] = expression_df.fillna(expression_df[igf_cols].min(axis=1)-np.log10(2))
+
+igf_mean = expression_df[igf_cols].mean(axis=1)
+rapa_mean = expression_df[rapa_cols].mean(axis=1)
+qc_mean = expression_df[qc_cols].mean(axis=1)
+vc_mean = expression_df[vc_cols].mean(axis=1)
+
+print(expression_df.head())
+
+mean_diff_igf_vs_rapa = expression_df[igf_cols].mean(axis=1) - expression_df[rapa_cols].mean(axis=1)
+stat, p_val = ttest_ind(expression_df[igf_cols], expression_df[rapa_cols], nan_policy='omit')
+print(stat)
+
+
+
+
+
+
+
+
+df_features = df_filtered[metadata_cols]
+df_features.loc[:, [
+    "IGF.Mean",
+    "Rapa.Mean",
+    "QC.Mean",
+    "VC.Mean",
+    "ttest.igf_vs_rapa.meandiff"
+]] = [
+    igf_mean,
+    rapa_mean,
+    qc_mean,
+    vc_mean,
+    mean_diff_igf_vs_rapa
+]
+
+
+
+df_features.to_csv("Features_Matrix_Python.csv",index=False)
+
     
-
-
-
-
-
-      
-
- 
- # TODO use plot methods to fill in NaN values
   
  
  # TODO perform PCAS

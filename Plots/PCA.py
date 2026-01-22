@@ -6,12 +6,13 @@ from fancyimpute import IterativeSVD
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 
-def normalPCA():
+
+def normalPCA(df = None):
     # Load data and transpose so rows=samples, cols=features
     df = pd.read_csv("Dataset/processedDf2_Final_Aligned.csv").set_index("ID").T
 
     # Log10 transform (keep values from exploding, avoid log(0) with +1)
-    #df = df.apply(lambda x: np.log10(x + 1) if np.issubdtype(x.dtype, np.number) else x)
+    df = df.apply(lambda x: np.log10(x + 1) if np.issubdtype(x.dtype, np.number) else x)
 
     # Sample labels for plotting
     target = df.index
