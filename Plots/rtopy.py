@@ -10,6 +10,7 @@ from scipy.stats import ttest_ind
 from urllib.request import urlretrieve
 import glob
 import PCA as pca
+from scipy.stats import false_discovery_control as fdr
 PPM_TOL = 15.0 #Mass tolerance for example with 100.001 and 100.002 it would be treated as the same molecule
 NOISE_THRESHOLD =25.0 #Any signal below this is treated as electronic static and ignored
 MIN_SAMPLES = 2
@@ -209,18 +210,29 @@ rapa_cols = expression_df.filter(like="Rapamycin").columns
 qc_cols = expression_df.filter(like="QC").columns
 vc_cols = expression_df.filter(like="VControl").columns
 
-expression_df[igf_cols] = expression_df.fillna(expression_df[igf_cols].min(axis=1)-np.log10(2))
+expression_df = expression_df.set_index("ID").T
+fillValue = expression_df.median() - np.log10(2)
+expression_df = expression_df.fillna(fillValue)
+
+expression_df = expression_df.T
+print(expression_df.head())
+
+
+
 
 igf_mean = expression_df[igf_cols].mean(axis=1)
 rapa_mean = expression_df[rapa_cols].mean(axis=1)
 qc_mean = expression_df[qc_cols].mean(axis=1)
 vc_mean = expression_df[vc_cols].mean(axis=1)
 
-print(expression_df.head())
-
 mean_diff_igf_vs_rapa = expression_df[igf_cols].mean(axis=1) - expression_df[rapa_cols].mean(axis=1)
-stat, p_val = ttest_ind(expression_df[igf_cols], expression_df[rapa_cols], nan_policy='omit')
-print(stat)
+mean_diff_igf_vs_vc =  expression_df[igf_cols].mean(axis=1) - expression_df[vc_cols].mean(axis=1)
+mean_diff_rapa_vs_vc =  expression_df[rapa_cols].mean(axis=1) - expression_df[vc_cols].mean(axis=1)
+
+_, p_valuesIGFRapa = ttest_ind(expression_df[igf_cols],expression_df[rapa_cols],axis=1,nan_policy='omit')
+_, p_valuesIGFVC = ttest_ind(expression_df[igf_cols],expression_df[vc_cols],axis=1,nan_policy='omit')
+_, p_valuesRapaVC = ttest_ind(expression_df[rapa_cols],expression_df[vc_cols],axis=1,nan_policy='omit')
+
 
 
 
@@ -230,19 +242,20 @@ print(stat)
 
 
 df_features = df_filtered[metadata_cols]
-df_features.loc[:, [
-    "IGF.Mean",
-    "Rapa.Mean",
-    "QC.Mean",
-    "VC.Mean",
-    "ttest.igf_vs_rapa.meandiff"
-]] = [
-    igf_mean,
-    rapa_mean,
-    qc_mean,
-    vc_mean,
-    mean_diff_igf_vs_rapa
-]
+df_features["IGF.Mean"] = igf_mean.values
+df_features["Rapa.Mean"] = rapa_mean.values
+df_features["QC.Mean"] = qc_mean.values
+df_features["VC.Mean"] = vc_mean.values
+df_features["ttest.igf_vs_Rapa.meandiff"] = mean_diff_igf_vs_rapa.values
+df_features["ttest.igf_vs_VC.meandiff"] = mean_diff_igf_vs_vc.values
+df_features["ttest.rapa_vs_VC.meandiff"] = mean_diff_rapa_vs_vc.values
+df_features["ttest.IGF_vs_Rapa.pvalue"] = p_valuesIGFRapa
+df_features["ttest.IGF_vs_Rapa.logpvalue"] = np.log10(-p_valuesIGFRapa)
+df_features["ttest.IGF_vs_VC.pvalue"] = p_valuesIGFVC
+df_features["ttest.IGF_vs_VC.logpvalue"] = np.log10(-p_valuesIGFVC)
+df_features["ttest.VC_vs_Rapa.pvalue"] = p_valuesRapaVC
+df_features["ttest.VC_vs_Rapa.logpvalue"] = np.log10(-p_valuesRapaVC)
+
 
 
 
