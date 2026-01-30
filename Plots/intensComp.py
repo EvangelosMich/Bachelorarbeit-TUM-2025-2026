@@ -27,5 +27,5 @@ for col1,col2,col3,col4 in zip(numCol1,numCol2,numCol3,numCol4):
 
     bars = plt.bar(name,values)
     plt.bar_label(bars,padding=3)
-    plt.title(f"Comparison of average values of each column for{col1}")
+    plt.title(f"Comparison of average intensities of each column for {col1}")
     plt.show()

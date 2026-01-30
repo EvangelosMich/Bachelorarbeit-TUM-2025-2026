@@ -5,15 +5,18 @@ from sklearn.preprocessing import StandardScaler
 from fancyimpute import IterativeSVD
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
+from sklearn.metrics import mean_squared_error
 
-
-def normalPCA(df = None):
+def normalPCA(csvFile = None):
     # Load data and transpose so rows=samples, cols=features
-    df = pd.read_csv("Dataset/S3(C)Expression.csv").set_index("ID").T
+    if csvFile is None:
+        df = pd.read_csv("Dataset/S3(C)Expression.csv").set_index("ID").T
+    else:
+        df = pd.read_csv(csvFile)
 
     # Log10 transform (keep values from exploding, avoid log(0) with +1)
     #df = df.apply(lambda x: np.log10(x + 1) if np.issubdtype(x.dtype, np.number) else x)
-
+    df_pre_fill = df.copy()
     # Sample labels for plotting
     target = df.index
     fillValues = df.median() - np.log10(2)
@@ -28,6 +31,17 @@ def normalPCA(df = None):
     
 
     vecs = pca.fit_transform(X)
+    
+    X_reconstructed = pca.inverse_transform(vecs)
+
+    # 2. Identify where we had real data (not the imputed values)
+    # We need to know which values in the original 'df' (pre-filling) were not NaN
+    original_data_mask = ~df_pre_fill.isna().to_numpy() 
+
+    # 3. Calculate the error only for those 'real' points
+    # We can use (Original - Reconstructed)^2
+    error = (X[original_data_mask] - X_reconstructed[original_data_mask])**2
+    mse = np.mean(error)
 
     # Put PCs into a dataframe
     reduced_df = pd.DataFrame(vecs, columns=["PC1", "PC2", "PC3", "PC4", "PC5", "PC6"])
@@ -35,18 +49,22 @@ def normalPCA(df = None):
 
     # Flip PC1/PC2 direction to match paper orientation
     reduced_df["PC1"] *= -1
-    # reduced_df["PC2"] *= -1
+    #reduced_df["PC2"] *= -1
     #reduced_df.to_csv("CordsforPCA1PCA2")
     # Plot PC1 vs PC2
-    plt.figure(figsize=(8, 6))
-    plt.scatter(reduced_df["PC1"], reduced_df["PC2"], s=50)
+    fig,ax = plt.subplots(figsize=(8, 6))
+    ax.scatter(reduced_df["PC1"], reduced_df["PC2"], s=50)
 
     for i, txt in enumerate(reduced_df["target"]):
-        plt.annotate(txt, (reduced_df["PC1"][i], reduced_df["PC2"][i]), fontsize=8)
+        ax.annotate(txt, (reduced_df["PC1"][i], reduced_df["PC2"][i]), fontsize=8)
 
-    plt.xlabel(f"PC1 ({pca.explained_variance_ratio_[0]*100:.2f}%)")
-    plt.ylabel(f"PC2 ({pca.explained_variance_ratio_[1]*100:.2f}%)")
-    plt.show()
+
+    print(f"Reconstruction MSE: {mse}")
+    ax.set_title(f"PCA with Imputation technique of median - log_10(2) for the Dataset S3(C)Expression")
+    ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0]*100:.2f}%)")
+    ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1]*100:.2f}%)")
+    #plt.show()
+    return fig
 
 
 
@@ -82,6 +100,7 @@ def PCAISVD(n_components = 6):
     for i, txt in enumerate(reduced_df["target"]):
         plt.annotate(txt, (reduced_df["PC1"][i], reduced_df["PC2"][i]), fontsize=8)
 
+    plt.title(f"PCA with Imputation technique of ISVD for the Dataset S3(C)Expression")
     plt.xlabel(f'PC1({pca.explained_variance_ratio_[0]})')
     plt.ylabel(f'PC2({pca.explained_variance_ratio_[1]})')
     plt.show()   
@@ -181,7 +200,7 @@ def main():
 
     # for i, txt in enumerate(reduced_df["target"]):
     #     plt.annotate(txt, (reduced_df["PC1"][i], reduced_df["PC2"][i]), fontsize=8)
-
+    #plt.title(f"PCA with Imputation technique of OALS for the Dataset S3(C)Expression")
     # plt.xlabel(f"PC1 ({explVars[0]*100:.1f}%)")
     # plt.ylabel(f"PC1 ({explVars[1]*100:.1f}%)")
     # plt.show() 
