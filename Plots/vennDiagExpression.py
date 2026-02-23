@@ -11,7 +11,7 @@ output_folder = "Dataset"
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
 def normalization(file1):    
-
+    print("Process Started")
     df1 = pd.read_csv(os.path.join(output_folder, "S3(C)Expression.csv"))
     df2 = pd.read_csv(file1)
 
@@ -25,6 +25,7 @@ def normalization(file1):
     all_used_indices_df2 = set()
 
     for col1, col2 in zip(numeric_cols1, numeric_cols2):
+        print("I went inside the loop")
         matched_values = []
         
         for i1, row1 in df1.iterrows():
@@ -53,8 +54,8 @@ def normalization(file1):
         
         plt.figure(figsize=(8, 5))
         venn2(subsets=(n_df1_only, n_df2_only, n_overlap), set_labels=("Reference (df1)", "Processed (df2)"))
-        plt.title(f"Feature Matching: {col2} for the Dataset S3(C) Expression and X")
-        #plt.show() # This line is essential to see the window
+        plt.title(f"Feature Matching: {col2} for the Dataset S3(C)Expression and ExpressionProcessed")
+        plt.show() # This line is essential to see the window
         # ---------------------------
 
     # 2. Process Outliers
@@ -64,7 +65,14 @@ def normalization(file1):
 
     # 3. Save everything to the Dataset folder
     df2_outliers.to_csv(os.path.join(output_folder, "outliersdf2.csv"), index=False)
-    return dfResult[any_match_mask].to_csv(os.path.join(output_folder, "processedDf2_Final_Aligned.csv"), index=False)
+
+    #return dfResult[any_match_mask].to_csv(os.path.join(output_folder, "processedDf2_Final_Aligned.csv"), index=False)
      
 
     print(f"\nFiles saved to {output_folder}/")
+
+def main():
+     normalization("Dataset/ExpressionProcessed.csv")
+
+if __name__ == "__main__":
+        main()

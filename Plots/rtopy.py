@@ -15,9 +15,10 @@ import tempfile
 from statsmodels.stats.multitest import multipletests
 PPM_TOL = 15.0 #Mass tolerance for example with 100.001 and 100.002 it would be treated as the same molecule
 NOISE_THRESHOLD =25.0 #Any signal below this is treated as electronic static and ignored
-MIN_SAMPLES = 2
+MIN_SAMPLES = 3
 DATADIR = "/home/evangelosge84puv/MSV000090865/raw/HILICNEGMZML"
 MIN_FRAC = 0.5
+ref = pd.read_csv("/home/evangelosge84puv/Desktop/Bachelorarbeit-TUM-2025-2026/Plots/hmdb_mini_reference.csv")
 
 all_mzml_files = glob.glob(f"{DATADIR}/*.mzML")
 def run_metabolomics_pipeline(uploaded_files):
@@ -197,6 +198,7 @@ def run_metabolomics_pipeline(uploaded_files):
     presence = df[intensity_cols].notna()
     mask = presence.sum(axis=1) >= MIN_SAMPLES
     df_filtered = df[mask]
+    df_filtered = df_filtered[df_filtered["quality"] > 0.7]
 
     mask = presence.mean(axis=1) >= MIN_FRAC
     df_filtered = df[mask]
@@ -231,10 +233,7 @@ def run_metabolomics_pipeline(uploaded_files):
     expression_df = expression_df.T
     print(expression_df.head())
 
-    ref_df = pd.read_csv("Dataset/S3(B)Feature.csv")
-    library = ref_df.dropna(subset=['General|All|annot_ms1'])
 
-    library = library[['General|All|mzmed','General|All|rtmed','General|All|annot_ms1']]
 
     
 
@@ -248,9 +247,9 @@ def run_metabolomics_pipeline(uploaded_files):
     mean_diff_igf_vs_vc =  expression_df[igf_cols].mean(axis=1) - expression_df[vc_cols].mean(axis=1)
     mean_diff_rapa_vs_vc =  expression_df[rapa_cols].mean(axis=1) - expression_df[vc_cols].mean(axis=1)
 
-    _, p_valuesIGFRapa = ttest_ind(expression_df[igf_cols],expression_df[rapa_cols],axis=1,nan_policy='omit')
-    _, p_valuesIGFVC = ttest_ind(expression_df[igf_cols],expression_df[vc_cols],axis=1,nan_policy='omit')
-    _, p_valuesRapaVC = ttest_ind(expression_df[rapa_cols],expression_df[vc_cols],axis=1,nan_policy='omit')
+    _, p_valuesIGFRapa = ttest_ind(expression_df[igf_cols],expression_df[rapa_cols],axis=1,nan_policy='omit',equal_var=False)
+    _, p_valuesIGFVC = ttest_ind(expression_df[igf_cols],expression_df[vc_cols],axis=1,nan_policy='omit',equal_var=False)
+    _, p_valuesRapaVC = ttest_ind(expression_df[rapa_cols],expression_df[vc_cols],axis=1,nan_policy='omit',equal_var=False)
 
 
     fdr_igfRapa = multipletests(p_valuesIGFRapa, method ='fdr_bh')
@@ -265,22 +264,8 @@ def run_metabolomics_pipeline(uploaded_files):
     df_features = df_filtered[metadata_cols]
 
     df_features["annot_ms1"] = "Unknown"
+    df_features["annot_ms1"] = df_features["mz"].apply(lambda x: find_hmdb_names(x, mode = 'neg',ppm=10))
 
-        # Loop through each metabolite in your library
-    for _, row in library.iterrows():
-            lib_mz = row["General|All|mzmed"]
-            lib_rt = row["General|All|rtmed"]
-            lib_name = row["General|All|annot_ms1"]
-
-            # Find features in our new data that are 'close enough' 🎯
-            # Using PPM for mass and seconds for RT
-            mz_dist = abs(df_features["mz"] - lib_mz) / lib_mz * 1e6
-            rt_dist = abs(df_features["rt"] - lib_rt)
-
-            mask = (mz_dist < PPM_TOL) & (rt_dist < 20.0)
-            
-            # If we find a match, update the name!
-            df_features.loc[mask, "annot_ms1"] = lib_name
 
     df_features["IGF.Mean"] = igf_mean.values
     df_features["Rapa.Mean"] = rapa_mean.values
@@ -290,17 +275,17 @@ def run_metabolomics_pipeline(uploaded_files):
     df_features["ttest.igf_vs_VC.meandiff"] = mean_diff_igf_vs_vc.values
     df_features["ttest.rapa_vs_VC.meandiff"] = mean_diff_rapa_vs_vc.values
     df_features["ttest.IGF_vs_Rapa.pvalue"] = p_valuesIGFRapa
-    df_features["ttest.IGF_vs_Rapa.logpvalue"] = np.log10(-p_valuesIGFRapa)
+    df_features["ttest.IGF_vs_Rapa.logpvalue"] = -np.log10(p_valuesIGFRapa)
     df_features["ttest.IGF_vs_VC.pvalue"] = p_valuesIGFVC
-    df_features["ttest.IGF_vs_VC.logpvalue"] = np.log10(-p_valuesIGFVC)
+    df_features["ttest.IGF_vs_VC.logpvalue"] = -np.log10(p_valuesIGFVC)
     df_features["ttest.VC_vs_Rapa.pvalue"] = p_valuesRapaVC
-    df_features["ttest.VC_vs_Rapa.logpvalue"] = np.log10(-p_valuesRapaVC)
+    df_features["ttest.VC_vs_Rapa.logpvalue"] = -np.log10(p_valuesRapaVC)
     df_features["ttest.IGF_vs_Rapa.fdr"] = fdr_igfRapa[1]
-    df_features["ttest.IGF_vs_Rapa.logfdr"] = np.log10(-fdr_igfRapa[1])
+    df_features["ttest.IGF_vs_Rapa.logfdr"] = -np.log10(fdr_igfRapa[1])
     df_features["ttest.Control_vs_Rapa.fdr"] = fdr_rapacontrol[1]
-    df_features["ttest.Control_vs_Rapa.logfdr"] = np.log10(-fdr_rapacontrol[1])
+    df_features["ttest.Control_vs_Rapa.logfdr"] = -np.log10(fdr_rapacontrol[1])
     df_features["ttest.IGF_vs_Control.fdr"] = fdr_igfcontrol[1]
-    df_features["ttest.IGF_vs_Control.logfdr"] = np.log10(-fdr_igfcontrol[1])
+    df_features["ttest.IGF_vs_Control.logfdr"] = -np.log10(fdr_igfcontrol[1])
 
 
 
@@ -313,7 +298,30 @@ def run_metabolomics_pipeline(uploaded_files):
     # TODO perform PCAS
     # TODO Perform T-tests
     # TODO Testing correction with FDR     
-        
+def find_hmdb_names(obs_mz, mode='pos', ppm=10):
+    # STEP A: Calculate Neutral Mass
+    # Positive [M+H]+: Neutral = m/z - 1.00727
+    # Negative [M-H]-: Neutral = m/z + 1.00727
+    if mode == 'pos':
+        theoretical_neutral = obs_mz - 1.00727
+    else:
+        theoretical_neutral = obs_mz + 1.00727
+    
+    # STEP B: Calculate the ppm window
+    # tolerance = (mass * ppm) / 1,000,000
+    tol = (theoretical_neutral * ppm) / 1e6
+    
+    # STEP C: Find matches in the reference
+    matches = ref[
+        (ref['monoisotopic_mass'] >= theoretical_neutral - tol) & 
+        (ref['monoisotopic_mass'] <= theoretical_neutral + tol)
+    ]
+    
+    if not matches.empty:
+        # Return all names found for this specific m/z
+        return "; ".join(matches['name'].unique())
+    else:
+        return "Unknown"        
 
 def main():
     # P,T,target,explVars = PCAOALS()

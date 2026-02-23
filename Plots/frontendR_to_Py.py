@@ -4,6 +4,7 @@ import os
 import rtopy
 import vennDiagExpression as ve
 import PCA
+import ttestrepl
 
 if "results_ready" not in st.session_state:
     st.session_state.results_ready = False
@@ -31,8 +32,14 @@ if uploaded_files:
             st.header("Expressions Table")
             st.dataframe(st.session_state.df_expression)
 
+            if st.button("Run PCA on current Data"):
+                st.pyplot(PCA.normalPCA("Expression_Matrix_Python.csv"))
+
+            if st.button("Run Ttesting"):
+                st.pyplot(ttestrepl.volcanoPythonigfvc())    
+
             if st.button("Normalize according to the original study"):
-                
+
                 processedCSV = ve.normalization("Expression_Matrix_Python.csv")
                 st.pyplot(PCA.normalPCA(processedCSV))   
         with tab2:

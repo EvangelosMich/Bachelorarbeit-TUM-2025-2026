@@ -9,7 +9,7 @@ RTTOL = 5.0
 output_folder = "Dataset"
 
 # 1. Load Data
-df1 = pd.read_csv("Dataset/processedFeatureInfo.csv")
+df1 = pd.read_csv("Features_Matrix_Python.csv")
 df2 = pd.read_csv("Dataset/S3(B)Feature.csv")
 
 # Initialize the result dataframe with metadata from df1
@@ -22,8 +22,8 @@ df2_aligned_rows = []
 
 # 2. Matching Logic
 for i1, row1 in df1.iterrows():
-    mz1 = row1["General.All.mzmed"]
-    rt1 = row1["General.All.rtmed"]
+    mz1 = row1["mz"]
+    rt1 = row1["rt"]
 
     # Filter df2 for candidates within both tolerances
     mask = (

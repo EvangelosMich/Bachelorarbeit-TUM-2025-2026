@@ -1,1 +1,5 @@
 /venv
+Plots/hmdb_metabolites.xml
+Plots/__pycache__/
+*.pyc
+.vscode/
