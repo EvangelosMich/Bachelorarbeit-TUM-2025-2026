@@ -4,7 +4,7 @@ from matplotlib_venn import venn2
 import matplotlib.pyplot as plt
 import os
 
-TOL = 0.027
+TOL = 0.025
 output_folder = "Dataset"
 
 # Ensure the folder exists
@@ -25,7 +25,6 @@ def normalization(file1):
     all_used_indices_df2 = set()
 
     for col1, col2 in zip(numeric_cols1, numeric_cols2):
-        print("I went inside the loop")
         matched_values = []
         
         for i1, row1 in df1.iterrows():
@@ -66,13 +65,13 @@ def normalization(file1):
     # 3. Save everything to the Dataset folder
     df2_outliers.to_csv(os.path.join(output_folder, "outliersdf2.csv"), index=False)
 
-    #return dfResult[any_match_mask].to_csv(os.path.join(output_folder, "processedDf2_Final_Aligned.csv"), index=False)
+    return dfResult[any_match_mask].to_csv(os.path.join(output_folder, "processedDf2_Final_Aligned.csv"), index=False)
      
 
     print(f"\nFiles saved to {output_folder}/")
 
 def main():
-     normalization("Dataset/ExpressionProcessed.csv")
+     normalization("Expression_Matrix_Python.csv")
 
 if __name__ == "__main__":
         main()

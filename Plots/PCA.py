@@ -7,13 +7,46 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 from sklearn.metrics import mean_squared_error
 import csv
+import seaborn as sns
+plt.rcParams.update({
+    "font.family": "serif",
+    "font.serif": ["Computer Modern Roman"], # Matches standard LaTeX font
+    "text.usetex": False,                     # Set to True if you have TeX installed on your PC
+    "axes.labelsize": 12,                     # Size of X and Y labels
+    "font.size": 11,                          # Matches your 11pt document size
+    "legend.fontsize": 10,
+    "xtick.labelsize": 10,
+    "ytick.labelsize": 10,
+    "figure.figsize": (8, 5),                 # Golden ratio-ish for 1\linewidth
+    "savefig.dpi": 300,                       # High resolution
+    "savefig.bbox": 'tight'                   # Removes unnecessary white margins
+})
 def normalPCA(csvFile = None):
     # Load data and transpose so rows=samples, cols=features
     if csvFile is None:
-        df = pd.read_csv("Dataset/S3(C)Expression.csv").set_index("ID").T
+        df = pd.read_csv("Dataset/ExpressionProcessed.csv").set_index("ID").T
     else:
-        df = pd.read_csv(csvFile)
+        df = pd.read_csv(csvFile).set_index("ID").T
+#     for col in df.select_dtypes(include=[object]):
+#         df[col] = df[col].replace(r'^\s*$', np.nan, regex=True)
+#     df.index = [name.split('_')[0] for name in df.index]
+#     nan_percentage = (df.isnull().sum().sum() / df.size) * 100
+#     print(nan_percentage)
+# # Or, if you want to keep the replicate number (e.g., IGF1_1)
+#     df.index = [name.replace('_Met_PB_06.12.20', '') for name in df.index]
+#     plt.figure(figsize=(15, 10), dpi=130)
 
+#     ax = plt.axes()
+#     my_cmap = sns.color_palette(["#000000", "#FF0000"])
+#     sns.heatmap(df.isna().transpose(),cmap=my_cmap, cbar=False, ax=ax, 
+#                 xticklabels=df.index, yticklabels=False)    
+    
+#     plt.title("Missing Values", fontsize=20)
+#     plt.xlabel("Experimental Samples", fontsize = 20) 
+#     plt.ylabel("Metabolite Features(ID)", fontsize = 20)
+    
+#     plt.tight_layout()
+#     plt.show()
     # Log10 transform (keep values from exploding, avoid log(0) with +1)
     #df = df.apply(lambda x: np.log10(x + 1) if np.issubdtype(x.dtype, np.number) else x)
     df_pre_fill = df.copy()
@@ -52,18 +85,17 @@ def normalPCA(csvFile = None):
     #reduced_df["PC2"] *= -1
     #reduced_df.to_csv("CordsforPCA1PCA2")
     # Plot PC1 vs PC2
-    fig,ax = plt.subplots(figsize=(8, 6))
+    fig,ax = plt.subplots(figsize=(15, 10), dpi=130)
     scat = ax.scatter(reduced_df["PC1"], reduced_df["PC2"], s=50)
     
     for i, txt in enumerate(reduced_df["target"]):
-        ax.annotate(txt, (reduced_df["PC1"][i], reduced_df["PC2"][i]), fontsize=8)
+        ax.annotate(txt, (reduced_df["PC1"][i], reduced_df["PC2"][i]), fontsize=11)
 
     points = scat.get_offsets()
     x_data = np.array(points[:,0])
     y_data = np.array(points[:,1])
-    fig.savefig("output.png")
     print(f"Reconstruction MSE: {mse}")
-    ax.set_title(f"PCA with Imputation technique of median - log_10(2) for the Dataset S3(C)Expression")
+    ax.set_title(f"PCA with Imputation technique of median - log_10(2) for the Python Produced Dataset")
     ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0]*100:.2f}%)")
     ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1]*100:.2f}%)")
     plt.show()
@@ -181,50 +213,51 @@ def calculate_mse(dm_centered, T, P):
 
 def main():
 # 1. Load Data
-    df = pd.read_csv("Dataset/S3(C)Expression.csv")
+    # df = pd.read_csv("Dataset/S3(C)Expression.csv")
     
-    # 2. Pre-process: Log transform and Transpose
-    # So that rows = samples (targets) and columns = genes (variables)
-    num_cols = df.select_dtypes(include=[np.number]).columns
-    df[num_cols] = np.log10(df[num_cols] + 1)
-    df_transposed = df.set_index(df.columns[0]).T
+    # # 2. Pre-process: Log transform and Transpose
+    # # So that rows = samples (targets) and columns = genes (variables)
+    # num_cols = df.select_dtypes(include=[np.number]).columns
+    # df[num_cols] = np.log10(df[num_cols] + 1)
+    # df_transposed = df.set_index(df.columns[0]).T
     
-    # Save the index for your plot labels
-    target = df_transposed.index
+    # # Save the index for your plot labels
+    # target = df_transposed.index
     
-    # 3. Create the matrix and CENTER it
-    # We MUST use np.nanmean so the mean isn't 'NaN'
-    dm = df_transposed.to_numpy(dtype=float)
-    col_means = np.nanmean(dm, axis=0)
-    dm_centered = dm - col_means # This is what you pass to the function
+    # # 3. Create the matrix and CENTER it
+    # # We MUST use np.nanmean so the mean isn't 'NaN'
+    # dm = df_transposed.to_numpy(dtype=float)
+    # col_means = np.nanmean(dm, axis=0)
+    # dm_centered = dm - col_means # This is what you pass to the function
 
-    # 4. CALL THE FUNCTION
-    # Pass dm_centered and specify 2 components
-    P, T, explVars = PCA_OALS(dm_centered, n_pcs=2)
+    # # 4. CALL THE FUNCTION
+    # # Pass dm_centered and specify 2 components
+    # P, T, explVars = PCA_OALS(dm_centered, n_pcs=2)
 
-    # 5. Plotting
-    reduced_df = pd.DataFrame(T, columns=["PC1", "PC2"])
-    reduced_df["target"] = target
+    # # 5. Plotting
+    # reduced_df = pd.DataFrame(T, columns=["PC1", "PC2"])
+    # reduced_df["target"] = target
 
-    # Flip PC1 to match standard orientation if needed
-    reduced_df["PC1"] *= -1
-    reduced_df["PC2"] *= -1
+    # # Flip PC1 to match standard orientation if needed
+    # reduced_df["PC1"] *= -1
+    # reduced_df["PC2"] *= -1
 
-    reduced_df.to_csv("PCA_Results_OALS.csv", index=False)
-    print("PCA coordinates saved to 'PCA_Results_OALS.csv'")
-    plt.figure(figsize=(8,6))
-    plt.scatter(reduced_df["PC1"], reduced_df["PC2"], s=50)
-    print(calculate_mse(dm_centered,T,P))
-    for i, txt in enumerate(reduced_df["target"]):
-        plt.annotate(txt, (reduced_df["PC1"][i], reduced_df["PC2"][i]), fontsize=8)
+    # reduced_df.to_csv("PCA_Results_OALS.csv", index=False)
+    # print("PCA coordinates saved to 'PCA_Results_OALS.csv'")
+    # plt.figure(figsize=(8,6))
+    # plt.scatter(reduced_df["PC1"], reduced_df["PC2"], s=50)
+    # print(calculate_mse(dm_centered,T,P))
+    # for i, txt in enumerate(reduced_df["target"]):
+    #     plt.annotate(txt, (reduced_df["PC1"][i], reduced_df["PC2"][i]), fontsize=8)
     
-    plt.title(f"PCA (O-ALS) for Dataset S3(C)Expression")
-    # explVars are fractions (e.g. 0.45), so multiply by 100
-    plt.xlabel(f"PC1 ({explVars[0]*100:.2f}%)")
-    plt.ylabel(f"PC2 ({explVars[1]*100:.2f}%)")
-    plt.axhline(0, color='grey', lw=1, alpha=0.5)
-    plt.axvline(0, color='grey', lw=1, alpha=0.5)
-    plt.show()
+    # plt.title(f"PCA (O-ALS) for Dataset S3(C)Expression")
+    # # explVars are fractions (e.g. 0.45), so multiply by 100
+    # plt.xlabel(f"PC1 ({explVars[0]*100:.2f}%)")
+    # plt.ylabel(f"PC2 ({explVars[1]*100:.2f}%)")
+    # plt.axhline(0, color='grey', lw=1, alpha=0.5)
+    # plt.axvline(0, color='grey', lw=1, alpha=0.5)
+    # plt.show()
+    normalPCA("Dataset/ExpressionProcessed.csv")
 
 
 if __name__ == "__main__":

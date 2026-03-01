@@ -11,7 +11,9 @@ from urllib.request import urlretrieve
 import glob
 import PCA as pca
 import tempfile
-
+import psutil
+import time
+from memory_profiler import profile
 from statsmodels.stats.multitest import multipletests
 PPM_TOL = 15.0 #Mass tolerance for example with 100.001 and 100.002 it would be treated as the same molecule
 NOISE_THRESHOLD =25.0 #Any signal below this is treated as electronic static and ignored
@@ -21,6 +23,7 @@ MIN_FRAC = 0.5
 ref = pd.read_csv("/home/evangelosge84puv/Desktop/Bachelorarbeit-TUM-2025-2026/Plots/hmdb_mini_reference.csv")
 
 all_mzml_files = glob.glob(f"{DATADIR}/*.mzML")
+@profile
 def run_metabolomics_pipeline(uploaded_files):
     all_featChroms = {}
 
@@ -74,28 +77,34 @@ def run_metabolomics_pipeline(uploaded_files):
             exp = MSExperiment()
             fm_file = FeatureMap()
 
-            # --- START OF FIX ---
-            # We create a temporary file on your hard drive 
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".mzML") as tmp:
-                tmp.write(uploaded_file.getvalue())
-                tmp_path = tmp.name # This is the "Real Path" OpenMS needs
-            
-            try:
-                # Use the physical path instead of the buffer
-                MzMLFile().load(tmp_path, exp) 
-            finally:
-                # Always delete the temp file when done to keep your PC clean
-                if os.path.exists(tmp_path):
-                    os.remove(tmp_path)
+            # --- UPDATED FIX FOR BOTH STREAMLIT AND LOCAL PATHS ---
+            if isinstance(uploaded_file, str):
+                # If it's a string (path), we load it directly
+                MzMLFile().load(uploaded_file, exp)
+                current_name = os.path.basename(uploaded_file)
+            else:
+                # If it's a Streamlit object, use the temporary file logic
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".mzML") as tmp:
+                    tmp.write(uploaded_file.getvalue())
+                    tmp_path = tmp.name
+                
+                try:
+                    MzMLFile().load(tmp_path, exp) 
+                finally:
+                    if os.path.exists(tmp_path):
+                        os.remove(tmp_path)
+                current_name = uploaded_file.name
             # --- END OF FIX ---
+
             masstraces = []
             masstracessplit = []
             feat_chrom = []
-            mtd.run(exp,masstraces,0) #Connecting the dots into traces
-            epd.detectPeaks(masstraces,masstracessplit) #Cut traces into specific peaks
-            ffm.run(masstracessplit,fm_file,feat_chrom) #Conert peaks into quantified Features
-            #Here essentially we create the list of metabolites for each specific file
-            all_featChroms[uploaded_file.name] = fm_file
+            mtd.run(exp, masstraces, 0)
+            epd.detectPeaks(masstraces, masstracessplit)
+            ffm.run(masstracessplit, fm_file, feat_chrom)
+            
+            # Use the current_name determined above
+            all_featChroms[current_name] = fm_file
             
 
 
@@ -322,6 +331,9 @@ def find_hmdb_names(obs_mz, mode='pos', ppm=10):
         return "; ".join(matches['name'].unique())
     else:
         return "Unknown"        
+def get_memory_usage():
+    process = psutil.Process(os.getpid())
+    return process.memory_info().rss / (1024 ** 3)  # Convert bytes to GB    
 
 def main():
     # P,T,target,explVars = PCAOALS()
@@ -340,7 +352,12 @@ def main():
     # plt.xlabel(f"PC1 ({explVars[0]*100:.1f}%)")
     # plt.ylabel(f"PC1 ({explVars[1]*100:.1f}%)")
     # plt.show() 
+    start_time = time.time()
     run_metabolomics_pipeline(glob.glob(f"{DATADIR}/*.mzML"))
+    end_time = time.time()
+    duration_seconds = end_time - start_time
+    duration_minutes = duration_seconds / 60
+    print(f"Total Execution Time: {duration_minutes:.2f} minutes")
 
 if __name__ == "__main__":
     main()    
